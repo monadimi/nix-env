@@ -1,5 +1,4 @@
-{
-  description = "Monad devShell: base";
+{description = "Monad devShell: base";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -36,15 +35,15 @@
           nodePackages.prettier
         ];
 
-        extraTools = with pkgs; [ ];
-
-      in
-      {
+        extraTools = with pkgs; [
+        ];
+      in {
         devShells.default = pkgs.mkShell {
           packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
             echo "Monad devShell (base) (${rev})"
           '';
+
         };
 
         checks = {
@@ -68,6 +67,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }

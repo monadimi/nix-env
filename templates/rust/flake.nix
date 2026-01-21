@@ -1,5 +1,4 @@
-{
-  description = "Monad devShell: rust";
+{description = "Monad devShell: rust";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -34,14 +33,14 @@
           pkg-config
           openssl
         ];
-
-      in
-      {
+      in {
         devShells.default = pkgs.mkShell {
           packages = commonTools ++ fmtTools ++ extraTools;
+          RUST_BACKTRACE = "1";
           shellHook = ''
             echo "Monad devShell (rust) (${rev})"
           '';
+
         };
 
         checks = {
@@ -65,6 +64,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }

@@ -26,30 +26,35 @@
           statix
         ];
 
-        extraTools =
-          (with pkgs; [
-            cargo
-            rustc
-            rustfmt
-            clippy
-            wasm-pack
-            wasm-bindgen-cli
-            trunk
-            dioxus-cli
-          ])
-          ++ pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
-            pkg-config
-            openssl
-            zlib
-            glib
-            gtk3
-            webkitgtk
-          ]);
+        baseTools = with pkgs; [
+          cargo
+          rustc
+          rustfmt
+          clippy
+          wasm-pack
+          wasm-bindgen-cli
+          trunk
+          dioxus-cli
+        ];
 
-      in
-      {
+        linuxDeps = with pkgs; [
+          pkg-config
+          openssl
+          zlib
+          glib
+          gtk3
+          webkitgtk
+        ];
+      in {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ extraTools;
+          packages =
+            commonTools
+            ++ fmtTools
+            ++ baseTools
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux linuxDeps;
+
+          RUST_BACKTRACE = "1";
+
           shellHook = ''
             echo "Monad devShell (dioxus) (${rev})"
           '';
@@ -76,6 +81,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }

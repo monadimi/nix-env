@@ -1,5 +1,4 @@
-{
-  description = "Monad devShell: flutter";
+{description = "Monad devShell: flutter";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -32,15 +31,14 @@
           android-tools
           jdk17
         ];
-
-      in
-      {
+      in {
         devShells.default = pkgs.mkShell {
           packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
             export JAVA_HOME=${pkgs.jdk17}
             echo "Monad devShell (flutter) (${rev})"
           '';
+
         };
 
         checks = {
@@ -64,6 +62,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }

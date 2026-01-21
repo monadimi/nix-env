@@ -1,5 +1,4 @@
-{
-  description = "Monad devShell: infra";
+{description = "Monad devShell: infra";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -39,14 +38,13 @@
           yq-go
           awscli2
         ];
-
-      in
-      {
+      in {
         devShells.default = pkgs.mkShell {
           packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
             echo "Monad devShell (infra) (${rev})"
           '';
+
         };
 
         checks = {
@@ -70,6 +68,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }

@@ -1,5 +1,4 @@
-{
-  description = "Monad devShell: embaded";
+{description = "Monad devShell: embaded";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -41,14 +40,13 @@
           minicom
           esptool
         ];
-
-      in
-      {
+      in {
         devShells.default = pkgs.mkShell {
           packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
             echo "Monad devShell (embaded) (${rev})"
           '';
+
         };
 
         checks = {
@@ -72,6 +70,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }

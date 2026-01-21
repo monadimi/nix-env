@@ -1,5 +1,4 @@
-{
-  description = "Monad devShell: react";
+{description = "Monad devShell: react";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -34,14 +33,13 @@
           nodePackages.eslint
           nodePackages.typescript
         ];
-
-      in
-      {
+      in {
         devShells.default = pkgs.mkShell {
           packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
             echo "Monad devShell (react) (${rev})"
           '';
+
         };
 
         checks = {
@@ -65,6 +63,5 @@
         };
 
         formatter = pkgs.nixfmt-rfc-style;
-      }
-    );
+      });
 }
