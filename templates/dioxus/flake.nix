@@ -30,6 +30,7 @@
           cargo
           rustc
           rustfmt
+          llvmPackages.lld
           clippy
           wasm-pack
           wasm-bindgen-cli
