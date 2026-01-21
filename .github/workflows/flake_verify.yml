@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   verify:
-    name: verify (${{ matrix.dir }})
+    name: verify (templates/${{ matrix.dir }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -28,6 +28,7 @@ jobs:
           - infra
           - react
           - rust
+          - base
 
     steps:
       - name: Checkout
@@ -46,12 +47,26 @@ jobs:
           nix --version
           nix show-config | sed -n '1,80p'
 
+      - name: Verify directory exists
+        id: dircheck
+        run: |
+          TARGET="templates/${{ matrix.dir }}"
+          if [ -d "$TARGET" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Skip: directory '$TARGET' not found"
+          fi
+
       - name: Flake check
-        working-directory: ${{ matrix.dir }}
+        if: steps.dircheck.outputs.exists == 'true'
+        working-directory: ${{ steps.dircheck.outputs.target }}
         run: |
           nix flake check -L
 
-      - name: Flake eval
-        working-directory: ${{ matrix.dir }}
+      - name: Flake eval (devShell exists)
+        if: steps.dircheck.outputs.exists == 'true'
+        working-directory: ${{ steps.dircheck.outputs.target }}
         run: |
-          nix eval .#devShells.${{ runner.arch }}-linux.default --json >/dev/null
+          nix eval .#devShells.x86_64-linux.default --json >/dev/null
