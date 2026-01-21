@@ -1,0 +1,57 @@
+name: flake-verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flake-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir:
+          - dioxus
+          - embaded
+          - flutter
+          - infra
+          - react
+          - rust
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-25.11
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Show Nix info
+        run: |
+          nix --version
+          nix show-config | sed -n '1,80p'
+
+      - name: Flake check
+        working-directory: ${{ matrix.dir }}
+        run: |
+          nix flake check -L
+
+      - name: Flake eval
+        working-directory: ${{ matrix.dir }}
+        run: |
+          nix eval .#devShells.${{ runner.arch }}-linux.default --json >/dev/null
