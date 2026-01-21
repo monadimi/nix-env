@@ -6,7 +6,7 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -51,21 +51,28 @@
 
         checks = {
           nixfmt = pkgs.runCommand "check-nixfmt" { } ''
-            ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check ${./.}
+            set -euo pipefail
+            find ${./.} -type f -name "*.nix" -print0 | xargs -0 ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check
             touch $out
           '';
+
           deadnix = pkgs.runCommand "check-deadnix" { } ''
+            set -euo pipefail
             ${pkgs.deadnix}/bin/deadnix ${./.}
             touch $out
           '';
+
           statix = pkgs.runCommand "check-statix" { } ''
+            set -euo pipefail
             ${pkgs.statix}/bin/statix check ${./.}
             touch $out
           '';
+
           sh = pkgs.runCommand "check-shell" { } ''
-            if ls -1 **/*.sh >/dev/null 2>&1; then
-              ${pkgs.shellcheck}/bin/shellcheck -x **/*.sh
-              ${pkgs.shfmt}/bin/shfmt -d **/*.sh
+            set -euo pipefail
+            if find ${./.} -type f -name "*.sh" -print -quit | grep -q .; then
+              ${pkgs.shellcheck}/bin/shellcheck -x $(find ${./.} -type f -name "*.sh")
+              ${pkgs.shfmt}/bin/shfmt -d $(find ${./.} -type f -name "*.sh")
             fi
             touch $out
           '';

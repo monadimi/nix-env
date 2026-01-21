@@ -1,12 +1,12 @@
 {
-  description = "Monad devShell: infra";
+  description = "Monad devShell: base";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -14,22 +14,16 @@
         commonTools = with pkgs; [
           git
           curl
+          wget
+          unzip
+          zip
           jq
+          gnused
+          gawk
+          which
+          tree
           ripgrep
           fd
-        ];
-
-        infraTools = with pkgs; [
-          terraform
-          opentofu
-          ansible
-          kubectl
-          kubernetes-helm
-          kustomize
-          sops
-          age
-          yq-go
-          awscli2
         ];
 
         fmtTools = with pkgs; [
@@ -38,31 +32,30 @@
           statix
           shfmt
           shellcheck
+          nodePackages.prettier
         ];
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ infraTools;
+          packages = commonTools ++ fmtTools;
         };
 
         checks = {
           nixfmt = pkgs.runCommand "check-nixfmt" { } ''
-            ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check ${./.}
+            set -euo pipefail
+            find ${./.} -type f -name "*.nix" -print0 | xargs -0 ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check
             touch $out
           '';
+
           deadnix = pkgs.runCommand "check-deadnix" { } ''
+            set -euo pipefail
             ${pkgs.deadnix}/bin/deadnix ${./.}
             touch $out
           '';
+
           statix = pkgs.runCommand "check-statix" { } ''
+            set -euo pipefail
             ${pkgs.statix}/bin/statix check ${./.}
-            touch $out
-          '';
-          sh = pkgs.runCommand "check-shell" { } ''
-            if ls -1 **/*.sh >/dev/null 2>&1; then
-              ${pkgs.shellcheck}/bin/shellcheck -x **/*.sh
-              ${pkgs.shfmt}/bin/shfmt -d **/*.sh
-            fi
             touch $out
           '';
         };

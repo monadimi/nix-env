@@ -63,7 +63,7 @@ jobs:
         if: steps.dircheck.outputs.exists == 'true'
         working-directory: ${{ steps.dircheck.outputs.target }}
         run: |
-          nix flake check -L
+          nix flake check -L --no-write-lock-file
 
       - name: Flake eval (devShell exists)
         if: steps.dircheck.outputs.exists == 'true'
