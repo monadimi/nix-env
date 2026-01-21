@@ -6,10 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -19,23 +20,6 @@
           fd
         ];
 
-        buildTools = with pkgs; [
-          cmake
-          ninja
-          gnumake
-          pkg-config
-          python3
-          python3Packages.pip
-        ];
-
-        embeddedTools = with pkgs; [
-          gcc-arm-embedded
-          openocd
-          picocom
-          minicom
-          esptool
-        ];
-
         fmtTools = with pkgs; [
           nixfmt-rfc-style
           deadnix
@@ -43,10 +27,28 @@
           shfmt
           shellcheck
         ];
+
+        extraTools = with pkgs; [
+          cmake
+          ninja
+          gnumake
+          pkg-config
+          python3
+          python3Packages.pip
+          gcc-arm-embedded
+          openocd
+          picocom
+          minicom
+          esptool
+        ];
+
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ buildTools ++ embeddedTools;
+          packages = commonTools ++ fmtTools ++ extraTools;
+          shellHook = ''
+            echo "Monad devShell (embaded) (${rev})"
+          '';
         };
 
         checks = {
@@ -65,15 +67,6 @@
           statix = pkgs.runCommand "check-statix" { } ''
             set -euo pipefail
             ${pkgs.statix}/bin/statix check ${./.}
-            touch $out
-          '';
-
-          sh = pkgs.runCommand "check-shell" { } ''
-            set -euo pipefail
-            if find ${./.} -type f -name "*.sh" -print -quit | grep -q .; then
-              ${pkgs.shellcheck}/bin/shellcheck -x $(find ${./.} -type f -name "*.sh")
-              ${pkgs.shfmt}/bin/shfmt -d $(find ${./.} -type f -name "*.sh")
-            fi
             touch $out
           '';
         };

@@ -6,10 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -19,27 +20,26 @@
           fd
         ];
 
-        flutterTools = with pkgs; [
-          flutter
-          dart
-        ];
-
-        androidTools = with pkgs; [
-          android-tools
-          jdk17
-        ];
-
         fmtTools = with pkgs; [
           nixfmt-rfc-style
           deadnix
           statix
         ];
+
+        extraTools = with pkgs; [
+          flutter
+          dart
+          android-tools
+          jdk17
+        ];
+
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ flutterTools ++ androidTools;
+          packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
             export JAVA_HOME=${pkgs.jdk17}
+            echo "Monad devShell (flutter) (${rev})"
           '';
         };
 

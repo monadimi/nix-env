@@ -6,12 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-
-        node = pkgs.nodejs_20;
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -21,8 +20,14 @@
           fd
         ];
 
-        webTools = with pkgs; [
-          node
+        fmtTools = with pkgs; [
+          nixfmt-rfc-style
+          deadnix
+          statix
+        ];
+
+        extraTools = with pkgs; [
+          nodejs_20
           nodePackages.pnpm
           yarn
           nodePackages.prettier
@@ -30,17 +35,12 @@
           nodePackages.typescript
         ];
 
-        fmtTools = with pkgs; [
-          nixfmt-rfc-style
-          deadnix
-          statix
-        ];
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ webTools;
+          packages = commonTools ++ fmtTools ++ extraTools;
           shellHook = ''
-            export NODE_ENV=development
+            echo "Monad devShell (react) (${rev})"
           '';
         };
 

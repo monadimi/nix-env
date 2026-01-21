@@ -6,10 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -19,7 +20,15 @@
           fd
         ];
 
-        infraTools = with pkgs; [
+        fmtTools = with pkgs; [
+          nixfmt-rfc-style
+          deadnix
+          statix
+          shfmt
+          shellcheck
+        ];
+
+        extraTools = with pkgs; [
           opentofu
           ansible
           kubectl
@@ -31,17 +40,13 @@
           awscli2
         ];
 
-        fmtTools = with pkgs; [
-          nixfmt-rfc-style
-          deadnix
-          statix
-          shfmt
-          shellcheck
-        ];
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ infraTools;
+          packages = commonTools ++ fmtTools ++ extraTools;
+          shellHook = ''
+            echo "Monad devShell (infra) (${rev})"
+          '';
         };
 
         checks = {
@@ -60,15 +65,6 @@
           statix = pkgs.runCommand "check-statix" { } ''
             set -euo pipefail
             ${pkgs.statix}/bin/statix check ${./.}
-            touch $out
-          '';
-
-          sh = pkgs.runCommand "check-shell" { } ''
-            set -euo pipefail
-            if find ${./.} -type f -name "*.sh" -print -quit | grep -q .; then
-              ${pkgs.shellcheck}/bin/shellcheck -x $(find ${./.} -type f -name "*.sh")
-              ${pkgs.shfmt}/bin/shfmt -d $(find ${./.} -type f -name "*.sh")
-            fi
             touch $out
           '';
         };

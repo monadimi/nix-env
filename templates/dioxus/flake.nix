@@ -6,36 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-
-        rustTools = with pkgs; [
-          cargo
-          rustc
-          rustfmt
-          clippy
-        ];
-
-        wasmTools = with pkgs; [
-          wasm-pack
-          wasm-bindgen-cli
-          trunk
-        ];
-
-        dioxusTools = with pkgs; [
-          dioxus-cli
-        ];
-
-        nativeDepsLinux = with pkgs; [
-          pkg-config
-          openssl
-          zlib
-          glib
-          gtk3
-          webkitgtk
-        ];
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -50,18 +25,34 @@
           deadnix
           statix
         ];
+
+        extraTools =
+          (with pkgs; [
+            cargo
+            rustc
+            rustfmt
+            clippy
+            wasm-pack
+            wasm-bindgen-cli
+            trunk
+            dioxus-cli
+          ])
+          ++ pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+            pkg-config
+            openssl
+            zlib
+            glib
+            gtk3
+            webkitgtk
+          ]);
+
       in
       {
         devShells.default = pkgs.mkShell {
-          packages =
-            commonTools
-            ++ fmtTools
-            ++ rustTools
-            ++ wasmTools
-            ++ dioxusTools
-            ++ pkgs.lib.optionals pkgs.stdenv.isLinux nativeDepsLinux;
-
-          RUST_BACKTRACE = "1";
+          packages = commonTools ++ fmtTools ++ extraTools;
+          shellHook = ''
+            echo "Monad devShell (dioxus) (${rev})"
+          '';
         };
 
         checks = {

@@ -6,10 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -34,10 +35,16 @@
           shellcheck
           nodePackages.prettier
         ];
+
+        extraTools = with pkgs; [ ];
+
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools;
+          packages = commonTools ++ fmtTools ++ extraTools;
+          shellHook = ''
+            echo "Monad devShell (base) (${rev})"
+          '';
         };
 
         checks = {

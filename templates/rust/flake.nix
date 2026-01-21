@@ -6,10 +6,11 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        rev = self.shortRev or self.rev or "dirty";
 
         commonTools = with pkgs; [
           git
@@ -19,7 +20,13 @@
           fd
         ];
 
-        rustTools = with pkgs; [
+        fmtTools = with pkgs; [
+          nixfmt-rfc-style
+          deadnix
+          statix
+        ];
+
+        extraTools = with pkgs; [
           cargo
           rustc
           rustfmt
@@ -28,16 +35,13 @@
           openssl
         ];
 
-        fmtTools = with pkgs; [
-          nixfmt-rfc-style
-          deadnix
-          statix
-        ];
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = commonTools ++ fmtTools ++ rustTools;
-          RUST_BACKTRACE = "1";
+          packages = commonTools ++ fmtTools ++ extraTools;
+          shellHook = ''
+            echo "Monad devShell (rust) (${rev})"
+          '';
         };
 
         checks = {
