@@ -11,112 +11,107 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        localVersion = "v0.1.2";
+        localVersion = "v0.1.3";
 
         remoteVersionUrl =
           "https://raw.githubusercontent.com/monadimi/nix-env/main/templates/web/version";
         remoteFlakeUrl =
           "https://raw.githubusercontent.com/monadimi/nix-env/main/templates/web/flake.nix";
 
-          updateScript = pkgs.writeShellScriptBin "web-flake-self-update" ''
-            set -euo pipefail
+        updateScript = pkgs.writeShellScriptBin "web-flake-self-update" ''
+          set -euo pipefail
 
-            if [ "''${UPDATE:-1}" = "0" ]; then
-              exit 0
-            fi
+          if [ "''${UPDATE:-1}" = "0" ]; then
+            exit 0
+          fi
 
-            if ! command -v curl >/dev/null 2>&1; then
-              exit 0
-            fi
+          if ! command -v curl >/dev/null 2>&1; then
+            exit 0
+          fi
 
-            if [ ! -f "./flake.nix" ]; then
-              exit 0
-            fi
+          if [ ! -f "./flake.nix" ]; then
+            exit 0
+          fi
 
-            read_local_version() {
-              # Extract first occurrence of: localVersion = "vX.Y.Z";
-              # Outputs empty string if not found.
-              sed -nE 's/^[[:space:]]*localVersion[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' ./flake.nix | head -n 1 || true
-            }
+          read_local_version() {
+            sed -nE 's/^[[:space:]]*localVersion[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' ./flake.nix | head -n 1 || true
+          }
 
-            read_remote_version_file() {
-              curl -fsSL --max-time 5 "${remoteVersionUrl}" 2>/dev/null \
-                | tr -d "\r" \
-                | head -n 1 \
-                | sed -e 's/[[:space:]]*$//'
-            }
+          read_remote_version_file() {
+            curl -fsSL --max-time 5 "${remoteVersionUrl}" 2>/dev/null \
+              | tr -d "\r" \
+              | head -n 1 \
+              | sed -e 's/[[:space:]]*$//'
+          }
 
-            read_version_from_file() {
-              # $1: file path
-              sed -nE 's/^[[:space:]]*localVersion[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' "$1" | head -n 1 || true
-            }
+          read_version_from_file() {
+            sed -nE 's/^[[:space:]]*localVersion[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' "$1" | head -n 1 || true
+          }
 
-            local_ver="$(read_local_version)"
-            if [ -z "$local_ver" ]; then
-              # Fallback to flake-eval constant if parsing fails
-              local_ver="${localVersion}"
-            fi
+          local_ver="$(read_local_version)"
+          if [ -z "$local_ver" ]; then
+            local_ver="${localVersion}"
+          fi
 
-            remote_ver="$(read_remote_version_file)"
-            if [ -z "$remote_ver" ]; then
-              exit 0
-            fi
+          remote_ver="$(read_remote_version_file)"
+          if [ -z "$remote_ver" ]; then
+            exit 0
+          fi
 
-            if [ "$remote_ver" = "$local_ver" ]; then
-              exit 0
-            fi
+          if [ "$remote_ver" = "$local_ver" ]; then
+            exit 0
+          fi
 
-            tmp="$(mktemp)"
-            trap 'rm -f "$tmp"' EXIT
+          tmp="$(mktemp)"
+          trap 'rm -f "$tmp"' EXIT
 
-            curl -fsSL --max-time 10 "${remoteFlakeUrl}" -o "$tmp"
+          curl -fsSL --max-time 10 "${remoteFlakeUrl}" -o "$tmp"
 
-            if ! grep -q 'description' "$tmp"; then
-              echo "Self-update aborted: invalid flake.nix"
-              exit 0
-            fi
+          if ! grep -q 'description' "$tmp"; then
+            echo "Self-update aborted: invalid flake.nix"
+            exit 0
+          fi
 
-            remote_flake_ver="$(read_version_from_file "$tmp")"
-            if [ -z "$remote_flake_ver" ]; then
-              echo "Self-update aborted: remote flake has no localVersion field"
-              exit 0
-            fi
+          remote_flake_ver="$(read_version_from_file "$tmp")"
+          if [ -z "$remote_flake_ver" ]; then
+            echo "Self-update aborted: remote flake has no localVersion field"
+            exit 0
+          fi
 
-            # Safety check: remote version file and remote flake should match
-            if [ "$remote_flake_ver" != "$remote_ver" ]; then
-              echo "Self-update aborted: version mismatch"
-              echo "version file : $remote_ver"
-              echo "remote flake : $remote_flake_ver"
-              exit 0
-            fi
+          if [ "$remote_flake_ver" != "$remote_ver" ]; then
+            echo "Self-update aborted: version mismatch"
+            echo "version file : $remote_ver"
+            echo "remote flake : $remote_flake_ver"
+            exit 0
+          fi
 
-            cp "$tmp" ./flake.nix
+          cp "$tmp" ./flake.nix
 
-            new_local_ver="$(read_local_version)"
-            if [ -z "$new_local_ver" ]; then
-              echo "Self-update warning: could not read updated localVersion from flake.nix"
-            fi
+          new_local_ver="$(read_local_version)"
+          if [ -z "$new_local_ver" ]; then
+            echo "Self-update warning: could not read updated localVersion from flake.nix"
+          fi
 
-            cat <<EOF
+          cat <<EOF
 
-          ============================================================
-          flake.nix has been UPDATED from remote template
-          ------------------------------------------------------------
-          Before update : $local_ver
-          After update  : ''${new_local_ver:-unknown}
-          Remote version: $remote_ver
+============================================================
+flake.nix has been UPDATED from remote template
+------------------------------------------------------------
+Before update : $local_ver
+After update  : ''${new_local_ver:-unknown}
+Remote version: $remote_ver
 
-          IMPORTANT:
-          This shell will now exit. Re-run:
+IMPORTANT:
+This shell will now exit. Re-run:
 
-            nix develop
+  nix develop
 
-          ============================================================
+============================================================
 
-          EOF
+EOF
 
-            exit 2
-          '';
+          exit 2
+        '';
 
         node = pkgs.nodejs_20;
 
@@ -128,7 +123,6 @@
 
           mkdir -p "$ZDOTDIR"
 
-          # Repair incomplete clone: require the real entrypoint file
           if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
             rm -rf "$ZSH"
             git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$ZSH"
@@ -147,7 +141,6 @@
               "$PLUGDIR/zsh-syntax-highlighting"
           fi
 
-          # If .zshrc missing OR oh-my-zsh entrypoint missing, rewrite .zshrc
           if [ ! -f "$ZDOTDIR/.zshrc" ] || [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
             cat > "$ZDOTDIR/.zshrc" <<'EOF'
 export ZSH="$ZDOTDIR/oh-my-zsh"
@@ -160,7 +153,17 @@ plugins=(
   zsh-syntax-highlighting
 )
 
-source "$ZSH/oh-my-zsh.sh"
+# If oh-my-zsh is missing at shell startup, try bootstrap once.
+if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
+  if command -v zsh-omz-bootstrap >/dev/null 2>&1; then
+    zsh-omz-bootstrap >/dev/null 2>&1 || true
+  fi
+fi
+
+# Only source if it exists.
+if [ -f "$ZSH/oh-my-zsh.sh" ]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
 
 prompt_context() {
   prompt_segment blue default "monad"
@@ -199,17 +202,20 @@ EOF
             fi
 
             if ! web-flake-self-update; then
-              echo
-              echo "NOTICE: flake.nix was updated during shell entry."
-              echo "This shell will now exit. Re-run:"
-              echo
-              echo "  nix develop"
-              echo
               exit 1
             fi
 
             export ZDOTDIR="$PWD/.zsh-nix"
+            export ZSH="$ZDOTDIR/oh-my-zsh"
+
             zsh-omz-bootstrap
+
+            # Only exec into zsh if oh-my-zsh entrypoint exists (prevents .zshrc source error).
+            if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
+              echo "oh-my-zsh install failed: missing $ZSH/oh-my-zsh.sh"
+              echo "Try: rm -rf .zsh-nix && nix develop"
+              exit 1
+            fi
 
             if [ "''${_MONAD_NIX_ZSH_STARTED:-0}" != "1" ]; then
               export _MONAD_NIX_ZSH_STARTED=1
