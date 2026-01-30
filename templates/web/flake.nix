@@ -11,7 +11,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        localVersion = "v0.1.3";
+        localVersion = "v0.1.4";
 
         remoteVersionUrl =
           "https://raw.githubusercontent.com/monadimi/nix-env/main/templates/web/version";
@@ -219,7 +219,7 @@ EOF
 
             if [ "''${_MONAD_NIX_ZSH_STARTED:-0}" != "1" ]; then
               export _MONAD_NIX_ZSH_STARTED=1
-              exec ${pkgs.zsh}/bin/zsh -l
+              exec ${pkgs.zsh}/bin/zsh
             fi
           '';
         };
