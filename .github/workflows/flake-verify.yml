@@ -29,6 +29,8 @@ jobs:
           - react
           - rust
           - base
+          - web
+          - cpp
 
     steps:
       - name: Checkout

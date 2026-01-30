@@ -11,7 +11,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        localVersion = "v0.1.0";
+        localVersion = "v0.1.1";
 
         remoteVersionUrl =
           "https://raw.githubusercontent.com/monadimi/nix-env/main/templates/web/version";
@@ -91,7 +91,9 @@ EOF
 
           mkdir -p "$ZDOTDIR"
 
-          if [ ! -d "$ZSH" ]; then
+          # Repair incomplete clone: require the real entrypoint file
+          if [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
+            rm -rf "$ZSH"
             git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$ZSH"
           fi
 
@@ -108,11 +110,11 @@ EOF
               "$PLUGDIR/zsh-syntax-highlighting"
           fi
 
-          if [ ! -f "$ZDOTDIR/.zshrc" ]; then
+          # If .zshrc missing OR oh-my-zsh entrypoint missing, rewrite .zshrc
+          if [ ! -f "$ZDOTDIR/.zshrc" ] || [ ! -f "$ZSH/oh-my-zsh.sh" ]; then
             cat > "$ZDOTDIR/.zshrc" <<'EOF'
 export ZSH="$ZDOTDIR/oh-my-zsh"
 
-# prompt_segment / prompt_context is from the agnoster theme family
 ZSH_THEME="agnoster"
 
 plugins=(
@@ -172,8 +174,6 @@ EOF
             export ZDOTDIR="$PWD/.zsh-nix"
             zsh-omz-bootstrap
 
-            # Force zsh login shell so that $ZDOTDIR/.zshrc is actually loaded.
-            # Guard to avoid infinite recursion if shellHook runs again.
             if [ "''${_MONAD_NIX_ZSH_STARTED:-0}" != "1" ]; then
               export _MONAD_NIX_ZSH_STARTED=1
               exec ${pkgs.zsh}/bin/zsh -l
