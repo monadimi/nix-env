@@ -176,10 +176,17 @@ EOF
           fi
         '';
 
-        rustToolchain =
-          fenix.packages.${system}.stable.toolchain.override {
-            targets = [ "wasm32-unknown-unknown" ];
-          };
+        fenixPkgs = fenix.packages.${system};
+
+        rustToolchain = fenixPkgs.combine [
+          fenixPkgs.stable.rustc
+          fenixPkgs.stable.cargo
+          fenixPkgs.stable.clippy
+          fenixPkgs.stable.rustfmt
+          fenixPkgs.stable.rust-src
+          fenixPkgs.stable.rust-analyzer
+          fenixPkgs.targets.wasm32-unknown-unknown.stable.rust-std
+        ];
 
         node = pkgs.nodejs_20;
       in
