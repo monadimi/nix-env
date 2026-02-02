@@ -4,3 +4,5 @@
 - 기본 구조(자동 업뎃, zsh, flutter 환경)
 ### v0.1.1
 - 패키지 경로 안정화
+### v0.1.2
+- "pkgs.androidenv.composeAndroidPackages"의 eula 수락
