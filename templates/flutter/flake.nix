@@ -176,14 +176,18 @@ EOF
           fi
         '';
 
-        # Flutter + Android toolchain
         flutter = pkgs.flutter;
-
         jdk = pkgs.jdk17;
 
-        androidSdk = pkgs.androidenv.androidPkgs_9_0.androidsdk;
+        android = pkgs.androidenv.composeAndroidPackages {
+          platformVersions = [ "34" "33" ];
+          buildToolsVersions = [ "34.0.0" "33.0.2" ];
+          abiVersions = [ "arm64-v8a" "armeabi-v7a" "x86_64" ];
+          includeEmulator = false;
+          includeSystemImages = false;
+        };
 
-        # Optional but useful
+        androidSdk = android.androidsdk;
         gradle = pkgs.gradle;
       in
       {
@@ -197,6 +201,7 @@ EOF
             flutter
             jdk
             androidSdk
+            pkgs.android-tools
             gradle
 
             pkgs.unzip
@@ -227,7 +232,7 @@ EOF
             export ANDROID_HOME="${androidSdk}/libexec/android-sdk"
             export ANDROID_SDK_ROOT="$ANDROID_HOME"
 
-            export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools/bin:$PATH"
+            export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/tools/bin:$PATH"
 
             export ZDOTDIR="$PWD/.zsh-nix"
             export ZSH="$ZDOTDIR/oh-my-zsh"

@@ -167,6 +167,40 @@ EOF
         }
       );
 
+      # CI/test harness expects this to exist
+      devShells = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          fenixPkgs = fenix.packages.${system};
+
+          rustToolchain = fenixPkgs.combine [
+            fenixPkgs.stable.rustc
+            fenixPkgs.stable.cargo
+            fenixPkgs.stable.clippy
+            fenixPkgs.stable.rustfmt
+            fenixPkgs.stable.rust-src
+            fenixPkgs.stable.rust-analyzer
+          ];
+        in
+        {
+          default = pkgs.mkShell {
+            packages = [
+              pkgs.git
+              pkgs.curl
+              pkgs.cacert
+              pkgs.nix
+              pkgs.systemd
+              rustToolchain
+              pkgs.pkg-config
+              pkgs.openssl
+              pkgs.clang
+              pkgs.lld
+              pkgs.gnumake
+            ];
+          };
+        }
+      );
+
       apps = forAllSystems (system: {
         run = {
           type = "app";
